@@ -15,11 +15,6 @@
 
 # Standard library of functions useful for startup scripts.
 
-# Pending UX behaviors
-# TODO(jmccune): call mandatory_argument() before E_MISSING_MANDATORY_ARG
-# TODO(jmccune): add -c <name> for alternate startup-script-custom name
-# Pending initialization functions:
-# TODO(jmccune): gsutil initialization w/ crcmod
 # Pending operational functions:
 # TODO(jmccune): get_from_bucket()
 # TODO(jmccune): setup_init_script()
@@ -216,6 +211,31 @@ stdlib::load_config_values() {
   esac
   # shellcheck source=/dev/null
   source "${config_file}"
+}
+
+# Install the compiled version of crcmod to get faster checksums when
+# transferring objects from GCS.  This function is intended for Enterprise Linux
+# flavor operating systems.  See:
+# https://cloud.google.com/storage/docs/gsutil/addlhelp/CRC32CandInstallingcrcmod
+stdlib::init_gsutil_crcmod_el() {
+  if gsutil version -l | grep -qix 'compiled crcmod: True'; then
+    stdlib::debug "Skipping init_gsutil_crcmod_el() because gsutil version -l reports compiled crcmod: True"
+    return 0
+  fi
+  # Install dependencies
+  stdlib::info "gsutil -version -l reports compiled crcmod is not true"
+  stdlib::info "BEGIN: gsutil crcmod compilation and installation"
+  stdlib::cmd yum -y install gcc python-devel python-setuptools redhat-rpm-config
+  # Use the correct python version in a subshell to avoid pollution of the
+  # calling environment.
+  (
+    set +u # avoid MANPATH unbound variable issue.
+    eval "$(grep -m1 'source .*/enable' /usr/bin/gsutil)"
+    stdlib::cmd easy_install -U pip
+    stdlib::cmd pip uninstall crcmod
+    stdlib::cmd pip install -U crcmod
+  )
+  stdlib::info "END: gsutil crcmod compilation and installation"
 }
 
 # Run a command logging the entry and exit.  Intended for system level commands
