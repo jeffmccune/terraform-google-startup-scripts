@@ -1,4 +1,4 @@
-# Copyright 2018 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project_id = attribute('project_id')
+# These outputs are fed to inspec as inputs.
+output "project_id" {
+  value = "${var.project_id}"
+}
 
-control 'simple startup-script-custom' do
-  title "With the simple example of startup-script-custom calling stdlib::info and stdlib::cmd"
-
-  describe command("gcloud compute instances list --project #{project_id}") do
-    its('exit_status') { should be 0 }
-    its('stderr') { should eq '' }
-    its('stdout') { should match(/startup-scripts-example.*RUNNING/) }
-  end
-end
+output "region" {
+  value = "${var.region}"
+}

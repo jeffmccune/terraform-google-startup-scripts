@@ -13,7 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Entry point for CI Integration Tests
+# Entry point for CI Integration Tests.  This script is expected to be run
+# inside the same docker image specified in the CI Pipeline definition.
 
-echo "Integration tests not yet implemented" >&2
-exit 1
+set -eu
+
+# Always clean up.
+DELETE_AT_EXIT="$(mktemp -d)"
+finish() {
+  kitchen destroy
+  [[ -d "${DELETE_AT_EXIT}" ]] && rm -rf "${DELETE_AT_EXIT}"
+}
+trap finish EXIT
+
+# inspec does not configure the environment for gcloud, so do it here.
+CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE="$(mktemp)"
+declare -rx CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE
+echo "${GOOGLE_CREDENTIALS}" > "${CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE}"
+
+set -x
+
+kitchen create
+kitchen converge
+kitchen verify
