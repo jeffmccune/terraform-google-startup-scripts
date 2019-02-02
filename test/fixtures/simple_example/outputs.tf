@@ -1,5 +1,4 @@
-#! /bin/bash
-# Copyright 2018 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Entry point for CI Integration Tests.  This script is expected to be run
-# inside the same docker image specified in the CI Pipeline definition.
+# These outputs are fed to inspec as inputs.
+output "project_id" {
+  value = "${var.project_id}"
+}
 
-set -xeu
-
-kitchen create
-kitchen converge
-kitchen verify
-# kitchen destroy
+output "region" {
+  value = "${var.region}"
+}

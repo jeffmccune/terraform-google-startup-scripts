@@ -1,5 +1,4 @@
-#! /bin/bash
-# Copyright 2018 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Entry point for CI Integration Tests.  This script is expected to be run
-# inside the same docker image specified in the CI Pipeline definition.
+---
+driver:
+  name: "terraform"
+  command_timeout: 1800
 
-set -xeu
+provisioner:
+  name: "terraform"
 
-kitchen create
-kitchen converge
-kitchen verify
-# kitchen destroy
+platforms:
+  - name: local
+
+verifier:
+  name: terraform
+  systems:
+    - name: system
+      backend: local
+
+suites:
+  - name: "simple_example"
+    driver:
+      name: "terraform"
+      command_timeout: 1800
+      root_module_directory: test/fixtures/simple_example

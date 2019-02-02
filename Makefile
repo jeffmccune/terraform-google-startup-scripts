@@ -25,6 +25,15 @@ BUILD_BATS_SUPPORT_VERSION ?= 004e707638eedd62e0481e8cdc9223ad471f12ee
 DOCKER_IMAGE_BATS := cftk/bats
 # DOCKER_TAG_BATS is the image semver and has no correlation to bats versions
 DOCKER_TAG_BATS ?= 0.6.0
+# Integration Testing Versions
+DOCKER_IMAGE_INTEGRATION := cft/kitchen-terraform
+# These versions should match the same versions used in the Pipeline definition
+BUILD_TERRAFORM_VERSION ?= 0.11.10
+BUILD_CLOUD_SDK_VERSION ?= 216.0.0
+BUILD_PROVIDER_GOOGLE_VERSION ?= 1.19.1
+BUILD_PROVIDER_GSUITE_VERSION ?= 0.1.10
+DOCKER_IMAGE_INTEGRATION_TAG ?= ${BUILD_TERRAFORM_VERSION}_${BUILD_CLOUD_SDK_VERSION}_${BUILD_PROVIDER_GOOGLE_VERSION}_${BUILD_PROVIDER_GSUITE_VERSION}
+DOCKER_IMAGE_INTEGRATION_URI ?= gcr.io/cloud-foundation-cicd/${DOCKER_IMAGE_INTEGRATION}:${DOCKER_IMAGE_INTEGRATION_TAG}
 
 # All is the first target in the file so it will get picked up when you just run 'make' on its own
 all: check_shell check_python check_golang check_terraform check_docker check_base_files test_check_headers check_headers check_trailing_whitespace generate_docs
@@ -105,10 +114,50 @@ docker_bats_parallel:
 		${DOCKER_IMAGE_BATS}:${DOCKER_TAG_BATS} \
 		/bin/bash -c "terraform init && time find test/spec/ -name '*.bats' -print0 | xargs -0 -P4 --no-run-if-empty -n1 bats"
 
-# Run docker bats shell
-.PHONY: docker_bats_shell
-docker_bats_shell:
+## BEGIN Resources
+# Model resources in the CI Pipeline definition. For example,
+# integration_test_image models the integration-test-image resource in CI.
+
+# Fetch the image.
+.PHONY: integration_test_image
+integration_test_image:
+	docker pull ${DOCKER_IMAGE_INTEGRATION_URI}
+## END Resources
+
+## BEGIN Job Tasks
+# Model the CI integration-tests job definition and tasks as a make target.
+# The Git repo is placed in the same path the CI pull-request resource will be
+# placed.  Params are passed in the same way params are passed in the CI run
+#
+# Unlike other modules which use a *.tfvars file, this module uses TF_VAR_*
+# environment variables to pass inputs into the integration tests.
+# GOOGLE_CREDENTIALS should contain the full JSON content of the SA key json
+# file.  (Not the path to the file, but the content.)
+#
+# To run the tests, pass in TF_VAR_region and TF_VAR_project_id, for example:
+#
+# TF_VAR_region=us-west1 TF_VAR_project_id=sandbox make integration_tests_run
+#
+# task.
+.PHONY: integration_test_run
+integration_tests_run: integration_test_image
 	docker run --rm -it \
-		-v $(CURDIR):/cftk/workdir \
-		${DOCKER_IMAGE_BATS}:${DOCKER_TAG_BATS} \
+		--volume $(CURDIR):/terraform-google-startup-scripts \
+		--workdir /terraform-google-startup-scripts \
+		--env GOOGLE_CREDENTIALS \
+		--env TF_VAR_project_id \
+		--env TF_VAR_region \
+		${DOCKER_IMAGE_INTEGRATION_URI} \
+		/bin/bash test/ci_integration.sh
+
+# Interactive Shell version of integration_tests_run
+.PHONY: integration_test_shell
+integration_test_shell: integration_test_image
+	docker run --rm -it \
+		--volume $(CURDIR):/terraform-google-startup-scripts \
+		--workdir /terraform-google-startup-scripts \
+		--env GOOGLE_CREDENTIALS \
+		--env TF_VAR_project_id \
+		--env TF_VAR_region \
+		${DOCKER_IMAGE_INTEGRATION_URI} \
 		/bin/bash
