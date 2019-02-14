@@ -62,9 +62,9 @@ main() {
   setup_environment
   set -x
   # Execute the test lifecycle
-  kitchen create
-  kitchen converge
-  kitchen verify
+  bundle exec kitchen create
+  bundle exec kitchen converge
+  bundle exec kitchen verify
 }
 
 # if script is being executed and not sourced.
