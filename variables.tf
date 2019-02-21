@@ -22,3 +22,8 @@ variable "enable_get_from_bucket" {
   description = "If not false, include stdlib::get_from_bucket() prior to executing startup-script-custom.  Requires gsutil in the PATH.  See also enable_init_gsutil_crcmod_el feature flag."
   default     = "false"
 }
+
+variable "enable_setup_sudoers" {
+  description = "If not false, include stdlib::setup_sudoers() prior to executing startup-script-custom. Call this function from startup-script-custom to setup unix usernames in sudoers Comma separated values must be posted to the project metadata key project/attributes/sudoers"
+  default     = false
+}
