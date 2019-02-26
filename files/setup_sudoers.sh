@@ -3,7 +3,7 @@
 # the sudoers file.
 stdlib::setup_sudoers() {
   local user user_list sudoers_file
-  user_list="$(metadata_get -k 'project/attributes/sudoers')"
+  user_list="$(stdlib::metadata_get -k 'project/attributes/sudoers')"
 
   if [[ -z "${user_list}" ]]; then
     stdlib::debug "Skipping sudoers setup.  The value of the project metadata key named sudoers is empty.  Set sudoers to a comma separated list to enable sudo support, e.g. sudoers=jmccune,pames"
